@@ -1,0 +1,66 @@
+import re
+from urllib import parse
+
+total = 11071
+step = 1000
+start = 5000
+
+#
+name = '国产药品'
+tableId = '25'
+tableName = 'TABLE25'
+bcId = '124356560303886909015737447882'
+
+list_file = 'H:\play-v-\pystudy\drug_crawl\crawl\国产药品\国产药品-list-1-2500.txt'
+"""
+page = 11070 ,166043条
+国产药品
+http://app1.sfda.gov.cn/datasearch/face3/base.jsp?
+tableId=25
+&tableName=TABLE25
+&title=国产药品
+&bcId=124356560303886909015737447882
+
+进口化妆品
+12809页 共192130条
+http://app1.sfda.gov.cn/datasearch/face3/base.jsp?
+tableId=69
+&tableName=TABLE69
+&title=进口化妆品
+&bcId=124053679279972677481528707165
+
+
+国产特殊用途化妆品
+http://app1.sfda.gov.cn/datasearch/face3/search.jsp?
+tableId=68
+&bcId=138009396676753955941050804482
+&tableName=TABLE68
+&viewtitleName=COLUMN787
+&viewsubTitleName=COLUMN793,COLUMN789
+&curstart=2
+&tableView=国产特殊用途化妆品
+&State=1
+
+"""
+
+
+def get_detail_url(a_href):
+    arr = re.compile('=').split(a_href)
+    arr = re.compile('\D').split(arr[-1])
+    # http://app1.sfda.gov.cn/datasearch/face3/content.jsp?tableId=68&tableName=TABLE68&tableView=国产特殊用途化妆品&Id=26378
+    prefix = 'http://app1.sfda.gov.cn/datasearch/face3/content.jsp?' \
+             'tableId=' + tableId \
+             + '&tableName=' + tableName + \
+             '&tableView=' + parse.quote(name) + '&Id='
+    return prefix + arr[0]
+
+
+def get_list_url(index):
+    return 'http://app1.sfda.gov.cn/datasearch/face3/search.jsp?' \
+           'tableId=' + tableId \
+           + '&bcId=' + bcId \
+           + '&tableName=' + tableName \
+           + '&curstart=' + index.__str__() \
+           + '&tableView=' + parse.quote(name) + '&State=1'
+    # + '&viewtitleName=' + viewtitleName \
+    # + '&viewsubTitleName=' + viewsubTitleName
