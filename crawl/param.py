@@ -1,9 +1,10 @@
+import os
 import re
 from urllib import parse
 
-total = 11071
+total = 2000 + 1
 step = 1000
-start = 5000
+start = 0 + 1
 
 #
 name = '国产药品'
@@ -11,7 +12,8 @@ tableId = '25'
 tableName = 'TABLE25'
 bcId = '124356560303886909015737447882'
 
-list_file = 'H:\play-v-\pystudy\drug_crawl\crawl\国产药品\国产药品-list-1-2500.txt'
+FILE_PREFIX = os.getcwd() + '\国产药品\\'
+list_file = '国产药品-list-1-1.txt'
 """
 page = 11070 ,166043条
 国产药品

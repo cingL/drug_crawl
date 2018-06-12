@@ -1,4 +1,8 @@
 import codecs
+import fileinput
+
+import pandas as pd
+import re
 import threading
 
 from bs4 import BeautifulSoup
@@ -43,8 +47,6 @@ def get_ids(driver, html, times=0):
                 href = a['href']
                 title = a.getText().strip()
                 details = param.get_detail_url(href)
-                # print(d   etails)
-                # urls.append(details)
                 urls[title] = details
     except TimeoutException as ex:
         print("Exception has been thrown. " + str(ex))
@@ -80,13 +82,13 @@ def do_crawl(index_arr):
                 fp.write('\npage ' + i.__str__() + ' crawl failed')
                 print('\npage ' + i.__str__() + ' crawl failed')
         fp.close()
+    return url_list
     # browser.close()
 
 
 class CrawlThread(threading.Thread):
-    def __init__(self, tid, arr):
+    def __init__(self, arr):
         threading.Thread.__init__(self)
-        self.tid = tid
         self.arr = arr
 
     def run(self):
@@ -94,12 +96,22 @@ class CrawlThread(threading.Thread):
         do_crawl(self.arr)
 
 
+def retry():
+    data = pd.read_excel(param.FILE_PREFIX + 'drug.xls', sheet_name='1-2500')
+    # iloc[row-2,col]
+    target_str = data.iloc[(40 - 2), 0]
+    print(target_str.split(','))
+
+
+# page_number = int(re.compile('\D').split(line)[0])
+# retry_data = do_crawl([page_number, (page_number + 1)])
+
+
 if __name__ == '__main__':
-    threads = []
-    while param.start < param.total:
-        end = param.start + param.step if param.step + param.start < param.total else param.total
-        print('(' + param.start.__str__() + ' , ' + end.__str__() + ')')
-        thread = CrawlThread(1, [param.start, param.start + param.step])
-        threads.append(thread)
-        thread.start()
-        param.start += param.step
+    retry()
+    # while param.start < param.total:
+    #     end = param.start + param.step if param.step + param.start < param.total else param.total
+    #     print('(' + param.start.__str__() + ' , ' + end.__str__() + ')')
+    #     thread = CrawlThread([param.start, end])
+    #     thread.start()
+    #     param.start += param.step
