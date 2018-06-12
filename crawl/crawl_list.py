@@ -1,16 +1,13 @@
 import codecs
-import fileinput
-
-import pandas as pd
-import re
 import threading
 
+import pandas as pd
+import xlwt as xlwt
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 
 from crawl import param
-
 
 # PROXY = "61.101.178.32:1752"
 #
@@ -27,6 +24,7 @@ from crawl import param
 #     }
 #     # you have to use remote, otherwise you'll have to code it yourself in python to
 #     return webdriver.Remote(webdriver.DesiredCapabilities.CHROME)
+from crawl.crawl_details import output_excel, crawl_detail
 
 
 def get_ids(driver, html, times=0):
@@ -67,9 +65,13 @@ def do_crawl(index_arr):
     :param index_arr: range()
     """
     file_name = param.name + '-list-' + (index_arr[0]).__str__() + '-' + (index_arr[1] - 1).__str__() + '.txt'
+    xls_file_name = param.name + '-list-' + (index_arr[0]).__str__() + '-' + (index_arr[1] - 1).__str__() + '.xls'
+    book = xlwt.Workbook()
+    sh = book.add_sheet('Sheet1')
+    browser = webdriver.Chrome()
+    # browser = get_remote_driver()
     with codecs.open(file_name, 'wb', encoding='utf-8') as fp:
-        browser = webdriver.Chrome()
-        # browser = get_remote_driver()
+        col = 0
         for i in range(index_arr[0], index_arr[1]):
             url = param.get_list_url(i)
             # print(url)
@@ -77,12 +79,17 @@ def do_crawl(index_arr):
             if url_list:
                 for k, v in url_list.items():
                     fp.write('{name},{urls}'.format(name='\n' + k, urls=v))
+                    detail = crawl_detail(browser, v)
+                    number = int(k.split('.')[0])
+                    drug_id = v.split('=')[-1]
+                    sh.write(col, 0, number.__str__() + ',id,' + drug_id + ',' + detail.__str__() + ',url,' + v)
+                    col += 1
                     print('{name},{urls}'.format(name='\n' + k, urls=v))
+                book.save(xls_file_name)
             else:
                 fp.write('\npage ' + i.__str__() + ' crawl failed')
                 print('\npage ' + i.__str__() + ' crawl failed')
         fp.close()
-    return url_list
     # browser.close()
 
 
@@ -108,10 +115,10 @@ def retry():
 
 
 if __name__ == '__main__':
-    retry()
-    # while param.start < param.total:
-    #     end = param.start + param.step if param.step + param.start < param.total else param.total
-    #     print('(' + param.start.__str__() + ' , ' + end.__str__() + ')')
-    #     thread = CrawlThread([param.start, end])
-    #     thread.start()
-    #     param.start += param.step
+    # retry()
+    while param.start < param.total:
+        end = param.start + param.step if param.step + param.start < param.total else param.total
+        print('(' + param.start.__str__() + ' , ' + end.__str__() + ')')
+        thread = CrawlThread([param.start, end])
+        thread.start()
+        param.start += param.step

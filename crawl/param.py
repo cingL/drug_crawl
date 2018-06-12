@@ -2,15 +2,15 @@ import os
 import re
 from urllib import parse
 
-total = 2000 + 1
+total = 5000 + 1
 step = 1000
-start = 0 + 1
+start = 3000 + 1
 
 #
-name = '国产药品'
-tableId = '25'
-tableName = 'TABLE25'
-bcId = '124356560303886909015737447882'
+name = '进口化妆品'
+tableId = '69'
+tableName = 'TABLE69'
+bcId = '124053679279972677481528707165'
 
 FILE_PREFIX = os.getcwd() + '\国产药品\\'
 list_file = '国产药品-list-1-1.txt'
