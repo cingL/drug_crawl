@@ -103,19 +103,7 @@ class CrawlThread(threading.Thread):
         do_crawl(self.arr)
 
 
-def retry():
-    data = pd.read_excel(param.FILE_PREFIX + 'drug.xls', sheet_name='1-2500')
-    # iloc[row-2,col]
-    target_str = data.iloc[(40 - 2), 0]
-    print(target_str.split(','))
-
-
-# page_number = int(re.compile('\D').split(line)[0])
-# retry_data = do_crawl([page_number, (page_number + 1)])
-
-
 if __name__ == '__main__':
-    # retry()
     while param.start < param.total:
         end = param.start + param.step if param.step + param.start < param.total else param.total
         print('(' + param.start.__str__() + ' , ' + end.__str__() + ')')

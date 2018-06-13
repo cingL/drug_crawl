@@ -11,18 +11,17 @@ from selenium import webdriver
 
 from crawl import param
 
-list_arr = [
-    '国产药品-list-1-2500.txt',
-    '国产药品-list-2501-5000.txt',
-]
-
+# '国产药品-list-1-2500.txt',
+# '国产药品-list-2501-5000.txt',
 # '国产药品-list-5001-6000.txt',
-# '国产药品-list-6001-7000.txt',
 # '国产药品-list-7001-8000.txt',
 # '国产药品-list-8001-9000.txt',
-# '国产药品-list-9001-10000.txt',
-# '国产药品-list-10001-11000.txt',
-# '国产药品-list-11001-11070.txt'
+# '国产药品-list-6001-7000.txt'
+list_arr = [
+    '国产药品-list-9001-10000.txt',
+    '国产药品-list-10001-11000.txt',
+    '国产药品-list-11001-11070.txt'
+]
 
 """
 批准文号,国药准字Z20020147,
@@ -59,14 +58,17 @@ def crawl_detail(browser, url, times=0):
             for td in all_td:
                 detail_str += td.getText().strip() + ','
             detail_str = cut(detail_str)
-            return detail_str
     except Exception as ex:
-        print("Exception has been thrown. " + str(ex))
-        if times < 3:
-            times += 1
-            crawl_detail(browser, url, times)
+        print("crawl_detail : Exception has been thrown. " + str(ex))
+    finally:
+        if detail_str:
+            return detail_str
         else:
-            return 'crawl detail failed , ' + url
+            if times < 3:
+                times += 1
+                return crawl_detail(browser, url, times)
+            else:
+                return detail_str
 
 
 def combine_excel():
@@ -122,7 +124,7 @@ class CrawlDetailThread(threading.Thread):
 
 if __name__ == '__main__':
     for txt in list_arr:
-        file_path = param.FILE_PREFIX + txt
+        file_path = param.FILE_PREFIX + 'list\\' + txt
         print(file_path, txt.split('.')[0])
         thread = CrawlDetailThread(file_path, txt.split('.')[0])
         thread.start()
