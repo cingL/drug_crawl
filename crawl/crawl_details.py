@@ -16,27 +16,12 @@ from crawl import param
 # '国产药品-list-5001-6000.txt',
 # '国产药品-list-7001-8000.txt',
 # '国产药品-list-8001-9000.txt',
-# '国产药品-list-6001-7000.txt'
+#     '国产药品-list-11001-11070.txt'
 list_arr = [
+    '国产药品-list-6001-7000.txt',
     '国产药品-list-9001-10000.txt',
     '国产药品-list-10001-11000.txt',
-    '国产药品-list-11001-11070.txt'
 ]
-
-"""
-批准文号,国药准字Z20020147,
-产品名称,龟龙中风丸,
-英文名称,,
-商品名,,
-剂型,丸剂(水丸),
-规格,每30丸重5g,
-生产单位,沈阳红药集团股份有限公司,
-生产地址,沈阳市大东区北大营西路2号,
-产品类别,中药,
-批准日期,2015-07-30,
-原批准文号,,
-药品本位码,86901343001160
-"""
 
 
 def cut(result):
@@ -66,26 +51,29 @@ def crawl_detail(browser, url, times=0):
         else:
             if times < 3:
                 times += 1
-                return crawl_detail(browser, url, times)
+                crawl_detail(browser, url, times)
             else:
                 return detail_str
 
 
-def combine_excel():
+def combine_excel(folder):
     """
     combine all the excel
     :return:
+
+    example:
+        combine_excel('\\国产药品\\detail')
+
     """
-    files = os.listdir(os.getcwd())
+    files = os.listdir(os.getcwd() + folder)
     files_xls = [f for f in files if f[-3:] == 'xls']
     with ExcelWriter(param.name + '.xls') as writer:
         for i, f in enumerate(files_xls):
-            print(i)
-            print(f)
+            print(i.__str__() + ',' + f)
             df = pd.DataFrame()
-            data = pd.read_excel(f, sheet_name='Sheet1')
+            data = pd.read_excel(os.getcwd() + folder + '\\' + f, sheet_name='Sheet1')
             df = df.append(data)
-            df.to_excel(writer, sheet_name='Sheet' + (i + 1).__str__(), merge_cells=False, index=False)
+            df.to_excel(writer, sheet_name=f.split('.')[0], merge_cells=False, index=False)
     writer.close()
 
 

@@ -47,9 +47,13 @@ tableId=68
 
 
 def get_detail_url(a_href):
+    """
+    http://app1.sfda.gov.cn/datasearch/face3/content.jsp?tableId=68&tableName=TABLE68&tableView=国产特殊用途化妆品&Id=26378
+    :param a_href:
+    :return:
+    """
     arr = re.compile('=').split(a_href)
     arr = re.compile('\D').split(arr[-1])
-    # http://app1.sfda.gov.cn/datasearch/face3/content.jsp?tableId=68&tableName=TABLE68&tableView=国产特殊用途化妆品&Id=26378
     prefix = 'http://app1.sfda.gov.cn/datasearch/face3/content.jsp?' \
              'tableId=' + tableId \
              + '&tableName=' + tableName + \
@@ -58,6 +62,11 @@ def get_detail_url(a_href):
 
 
 def get_list_url(index):
+    """
+    http://app1.sfda.gov.cn/datasearch/face3/search.jsp?tableId=69&bcId=124053679279972677481528707165&tableName=TABLE69&curstart=4386&tableView=%E8%BF%9B%E5%8F%A3%E5%8C%96%E5%A6%86%E5%93%81&State=1
+    :param index:
+    :return:
+    """
     return 'http://app1.sfda.gov.cn/datasearch/face3/search.jsp?' \
            'tableId=' + tableId \
            + '&bcId=' + bcId \

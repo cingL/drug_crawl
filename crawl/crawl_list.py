@@ -48,6 +48,7 @@ def get_ids(driver, html, times=0):
                 urls[title] = details
     except TimeoutException as ex:
         print("Exception has been thrown. " + str(ex))
+        raise ex
     finally:
         if urls:
             return urls

@@ -1,27 +1,23 @@
+import codecs
+import os
+import threading
+
 import pandas as pd
 from selenium import webdriver
 
 from crawl import param
 from crawl.crawl_details import crawl_detail
+from crawl.crawl_list import get_ids
+
+# iloc[row-2,col]
+# target_str = data.iloc[(40 - 2), 0]
+# print(target_str.split(','))
 
 """
-国产药品-list-1-2500.xls
-国产药品-list-2501-5000.xls
+'进口化妆品-list-2001-3000.txt',
+'进口化妆品-list-3001-4000.txt',
+'进口化妆品-list-4001-5000.txt'
 """
-
-"""
-158,id,33946,None,url,http://app1.sfda.gov.cn/datasearch/face3/content.jsp?tableId=25&tableName=TABLE25&tableView=%E5%9B%BD%E4%BA%A7%E8%8D%AF%E5%93%81&Id=33946
-
-批准文号,国药准字Z51021640,产品名称,龙胆泻肝片,英文名称,,商品名,,剂型,片剂(素片、糖衣片),规格,----,生产单位,四川禾润制药有限公司,生产地址,广汉市三星镇,产品类别,中药,批准日期,2015-08-21,原批准文号,,药品本位码,86902153000138；86902153000152
-
-
-110660,id,95138
-,批准文号,国药准字H32022930,产品名称,异烟肼,英文名称,Isoniazid,商品名,,剂型,原料药,规格,----,生产单位,苏州第五制药厂有限公司,生产地址,江苏省苏州市白洋湾大街169号,产品类别,化学药品,批准日期,2015-09-23,原批准文号,,药品本位码,86901648000066,url,http://app1.sfda.gov.cn/datasearch/face3/content.jsp?tableId=25&tableName=TABLE25&tableView=%E5%9B%BD%E4%BA%A7%E8%8D%AF%E5%93%81&Id=95138
-
-
-"""
-
-file_path = 'detail\\' + '国产药品-list-2501-5000.xls'
 
 
 def combine_str(array, detail):
@@ -30,34 +26,124 @@ def combine_str(array, detail):
     return ','.join(array)
 
 
-def retry():
+def retry(path):
+    data = pd.read_excel(path, sheet_name='Sheet1')
     try:
-        count = 0
         browser = webdriver.Chrome()
-        data = pd.read_excel(param.FILE_PREFIX + file_path, sheet_name='Sheet1')
-        for row in range(data.shape[0] - 1):
+        for row in range(data.shape[0]):
             s = str(data.iat[row, 0])
             if s.__contains__(',None'):
                 print(s)
                 arr = s.split(',')
-                new_str = combine_str(arr, crawl_detail(browser, arr[-1]))
-                print(new_str)
-                data = data.drop([row], axis=0)
-                data = pd.DataFrame(pd.np.insert(data.values, row, [new_str]))
-                count += 1
-                if count > 100:
-                    count = 0
-                    data.to_excel(param.FILE_PREFIX + file_path, index=False)
+                detail = crawl_detail(browser, arr[-1])
+                if detail:
+                    new_str = combine_str(arr, detail)
+                    print(new_str)
+                    data = data.drop([row], axis=0)
+                    data = pd.DataFrame(pd.np.insert(data.values, row, [new_str]))
     except Exception as ex:
-        print("Exception has been thrown. " + str(ex))
+        print("retry : Exception has been thrown. " + ex.__str__())
     finally:
-        data.to_excel(param.FILE_PREFIX + file_path, index=False)
+        data.to_excel(path, index=False)
 
 
-# iloc[row-2,col]
-# target_str = data.iloc[(40 - 2), 0]
-# print(target_str.split(','))
+class RetryThread(threading.Thread):
+    def __init__(self, file_path):
+        threading.Thread.__init__(self)
+        self.file_path = file_path
+
+    def run(self):
+        print('starting ' + self.file_path)
+        retry(self.file_path)
 
 
+class CheckThread(threading.Thread):
+    def __init__(self, file_path):
+        threading.Thread.__init__(self)
+        self.file_path = file_path
+
+    def run(self):
+        print('starting ' + self.file_path)
+        check(self.file_path)
+
+
+class TxtRetryThread(threading.Thread):
+    def __init__(self, file_path):
+        threading.Thread.__init__(self)
+        self.file_path = file_path
+
+    def run(self):
+        print('starting ' + self.file_path)
+        txt_retry(self.file_path)
+
+
+def txt_retry(path):
+    content = []
+    with codecs.open(os.getcwd() + path, 'r', 'utf-8') as txt:
+        for line in txt:
+            content.append(line)
+    txt.close()
+    txt_file = pd.DataFrame(content)
+    browser = webdriver.Chrome()
+    try:
+        # bug：item+在原数组上了……
+        for row in range(txt_file.shape[0]):
+            s = str(txt_file.iat[row, 0]).strip()
+            if s.__contains__('failed'):
+                page = s.split(' ')[1]
+                print(path + ' , ' + page)
+                url_dir = get_ids(browser, param.get_list_url(page))
+                if url_dir:
+                    count = 0
+                    txt_file = txt_file.drop([row], axis=0)
+                    for k, v in url_dir.items():
+                        new_str = '{name},{urls}'.format(name=k, urls=v + '\n')
+                        txt_file = pd.DataFrame(pd.np.insert(txt_file.values, row + count, [new_str]))
+                        count += 1
+    except Exception as e:
+        print('txt_retry() Exception : ' + e.__str__())
+    finally:
+        pd.np.savetxt(os.getcwd() + path, txt_file.values, fmt='%s', encoding='utf-8', newline='')
+        print('txt_retry() ' + path + ' finish.')
+
+
+def check(path, start=0):
+    """
+    eg
+        check('\\进口化妆品\\list\\进口化妆品-list-2001-3000.txt', 2000)
+
+    :param path:
+    :param start:
+    :return:
+    """
+    content = []
+    with codecs.open(os.getcwd() + path, 'r', 'utf-8') as txt:
+        for line in txt:
+            content.append(line)
+    txt.close()
+
+    try:
+        for index, item in enumerate(content):
+            if not item.__contains__('failed'):
+                if item.strip().split('.')[0]:
+                    number = int(item.strip().split('.')[0]) - (15 * start)
+                    if not number == index + 1:
+                        print(index.__str__() + ' == ' + item)
+            else:
+                print(item)
+    finally:
+        print('check ' + path + ' finish')
+
+
+list_arr = [
+    '进口化妆品-list-2001-3000.txt'
+    # '进口化妆品-list-3001-4000.txt',
+    # '进口化妆品-list-4001-5000.txt'
+]
 if __name__ == '__main__':
-    retry()
+    # check('\\进口化妆品\\list\\' + '进口化妆品-list-2001-3000.txt', 2000)
+    for xls in list_arr:
+        f_path = '\\进口化妆品\\list\\' + xls
+        print(f_path, xls.split('.')[0])
+        thread = TxtRetryThread(f_path)
+        thread.start()
