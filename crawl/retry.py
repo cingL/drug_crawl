@@ -1,6 +1,8 @@
 import codecs
 import os
+import re
 import threading
+from itertools import zip_longest
 
 import pandas as pd
 from selenium import webdriver
@@ -9,16 +11,6 @@ from crawl import param
 from crawl.crawl_details import crawl_detail
 from crawl.crawl_list import get_ids
 
-# iloc[row-2,col]
-# target_str = data.iloc[(40 - 2), 0]
-# print(target_str.split(','))
-
-"""
-'进口化妆品-list-2001-3000.txt',
-'进口化妆品-list-3001-4000.txt',
-'进口化妆品-list-4001-5000.txt'
-"""
-
 
 def combine_str(array, detail):
     array.remove('None')
@@ -26,10 +18,15 @@ def combine_str(array, detail):
     return ','.join(array)
 
 
-def retry(path):
+def xls_retry(path):
+    """
+    replace None in xls
+    :param path:
+    :return:
+    """
     data = pd.read_excel(path, sheet_name='Sheet1')
+    browser = webdriver.Chrome()
     try:
-        browser = webdriver.Chrome()
         for row in range(data.shape[0]):
             s = str(data.iat[row, 0])
             if s.__contains__(',None'):
@@ -43,28 +40,19 @@ def retry(path):
                     data = pd.DataFrame(pd.np.insert(data.values, row, [new_str]))
     except Exception as ex:
         print("retry : Exception has been thrown. " + ex.__str__())
+        browser.close()
     finally:
         data.to_excel(path, index=False)
 
 
-class RetryThread(threading.Thread):
+class XlsRetryThread(threading.Thread):
     def __init__(self, file_path):
         threading.Thread.__init__(self)
         self.file_path = file_path
 
     def run(self):
         print('starting ' + self.file_path)
-        retry(self.file_path)
-
-
-class CheckThread(threading.Thread):
-    def __init__(self, file_path):
-        threading.Thread.__init__(self)
-        self.file_path = file_path
-
-    def run(self):
-        print('starting ' + self.file_path)
-        check(self.file_path)
+        xls_retry(self.file_path)
 
 
 class TxtRetryThread(threading.Thread):
@@ -78,17 +66,20 @@ class TxtRetryThread(threading.Thread):
 
 
 def txt_retry(path):
-    content = []
-    with codecs.open(os.getcwd() + path, 'r', 'utf-8') as txt:
-        for line in txt:
-            content.append(line)
-    txt.close()
+    """
+    replace 'page xx crawl failed' in txt
+    :param path:
+    :return:
+    """
+    content = get_file_content(path)
+
     txt_file = pd.DataFrame(content)
     browser = webdriver.Chrome()
     try:
-        # bug：item+在原数组上了……
-        for row in range(txt_file.shape[0]):
+        for row in reversed(range(txt_file.shape[0])):
             s = str(txt_file.iat[row, 0]).strip()
+            if not s:
+                txt_file.drop(row)
             if s.__contains__('failed'):
                 page = s.split(' ')[1]
                 print(path + ' , ' + page)
@@ -100,6 +91,7 @@ def txt_retry(path):
                         new_str = '{name},{urls}'.format(name=k, urls=v + '\n')
                         txt_file = pd.DataFrame(pd.np.insert(txt_file.values, row + count, [new_str]))
                         count += 1
+        txt_file.sort_index(axis=0)
     except Exception as e:
         print('txt_retry() Exception : ' + e.__str__())
     finally:
@@ -107,43 +99,194 @@ def txt_retry(path):
         print('txt_retry() ' + path + ' finish.')
 
 
-def check(path, start=0):
+def xls_check(path, start=0):
     """
+    check xls
+    :param path:
+    :param start:
+    :return:
+    """
+    data = get_file_pd(path)
+    error = []
+    fail = []
+    for index in range(data.shape[0]):
+        item = str(data.iat[index, 0])
+        if not item.__contains__(',None'):
+            if item.strip().split(',')[0]:
+                number = int(item.strip().split(',')[0]) - (15 * start)
+                if not number == index + 1:
+                    error.append(item)
+                    # print(index.__str__() + ' == ' + item)
+        else:
+            fail.append(item)
+            # print(item)
+    if error.__len__() or fail.__len__():
+        print(
+            'check ' + path + ' finish : with ' + fail.__len__().__str__() + ' failed and ' + error.__len__().__str__() + ' error index has found')
+    else:
+        print('check ' + path + ' finish : with no error')
+
+
+def txt_check(path, start=0):
+    """
+    check whether there is failed in txt
     eg
-        check('\\进口化妆品\\list\\进口化妆品-list-2001-3000.txt', 2000)
+            for f in list_arr:
+                i = int(re.compile('-').split(f)[2]) - 1
+                check(FILE_DIR_LIST + f, i)
 
     :param path:
     :param start:
     :return:
     """
-    content = []
-    with codecs.open(os.getcwd() + path, 'r', 'utf-8') as txt:
-        for line in txt:
-            content.append(line)
-    txt.close()
+    content = get_file_content(path)
 
+    error = []
+    fail = []
+    for index, item in enumerate(content):
+        if not item.__contains__('failed'):
+            if item.strip().split('.')[0]:
+                number = int(item.strip().split('.')[0]) - (15 * start)
+                if not number == index + 1:
+                    error.append(item)
+                    print(index.__str__() + ' == ' + item)
+        else:
+            fail.append(item)
+            print(item)
+    if error.__len__() or fail.__len__():
+        print(
+            'check ' + path + ' finish : with ' + fail.__len__().__str__() + ' failed and ' + error.__len__().__str__() + ' error index has found')
+    else:
+        print('check ' + path + ' finish : with no error')
+
+
+def get_file_pd(path):
+    return pd.read_excel(os.getcwd() + path, sheet_name='Sheet1')
+
+
+def fill_xls(directory, l, d):
+    """
+    :param directory: category
+    :param l: list file,txt
+    :param d: detail file,xls
+    """
+    list_content = get_file_content(directory + folder[0] + l)
+    detail_content = get_file_pd(directory + folder[1] + d)
+    browser = webdriver.Chrome()
     try:
-        for index, item in enumerate(content):
-            if not item.__contains__('failed'):
-                if item.strip().split('.')[0]:
-                    number = int(item.strip().split('.')[0]) - (15 * start)
-                    if not number == index + 1:
-                        print(index.__str__() + ' == ' + item)
+        for l_line, d_line in zip_longest(list_content, range(detail_content.shape[0]), fillvalue=None):
+            txt_number = l_line.split('.')[0]
+            if d_line is None:
+                xls_number = -1
             else:
-                print(item)
+                xls_number = str(detail_content.iat[d_line, 0]).split(',')[0]
+            # print(txt_number, l_line.split(',')[1])
+            if not txt_number == xls_number:
+                print(txt_number + ' == ' + xls_number.__str__())
+                detail = crawl_detail(browser, l_line.split(',')[1])
+                insert_str = pd.DataFrame([txt_number + ',id,' + l_line.split('=')[-1] + ',' \
+                                           + detail.__str__() + ',url,' + l_line.split(',')[1]])
+                detail_content = pd.DataFrame(detail_content.append(insert_str, ignore_index=True))
     finally:
-        print('check ' + path + ' finish')
+        print('fill_xls() end')
+        detail_content.to_excel(os.getcwd() + directory + folder[1] + d, index=False)
 
 
-list_arr = [
-    '进口化妆品-list-2001-3000.txt'
-    # '进口化妆品-list-3001-4000.txt',
-    # '进口化妆品-list-4001-5000.txt'
+def get_file_content(file):
+    """
+    get the content of file
+    :param file: file path
+    :return: an array with file content
+    """
+    content = []
+    with codecs.open(os.getcwd() + file, 'r', 'utf-8') as t:
+        for line in t:
+            content.append(line)
+    t.close()
+    return content
+
+
+FILE_DIR_LIST = [
+    '\\国产药品\\',
+    # '\\进口化妆品\\',
+    # '\\国产特殊用途化妆品\\'
 ]
+
+folder = ['list\\', 'detail\\']
+
+
+def txt_vs_xls():
+    """
+       txt_vs_xls
+    """
+    for directory in FILE_DIR_LIST:
+        list_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
+        detail_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
+        for l, d in zip(list_arr, detail_arr):
+            print(l + ' vs ' + d)
+            list_content = get_file_content(directory + folder[0] + l)
+            detail_content = get_file_pd(directory + folder[1] + d)
+            error = []
+            for l_line, d_line in zip_longest(list_content, range(detail_content.shape[0]), fillvalue=None):
+                txt_number = l_line.split('.')[0]
+                if d_line is None:
+                    xls_number = -1
+                else:
+                    xls_number = str(detail_content.iat[d_line, 0]).split(',')[0]
+                if not txt_number == xls_number:
+                    error.append(txt_number)
+            if error.__len__():
+                print(l + ' vs ' + d + ' finish : with ' + error.__len__().__str__() + ' error found')
+            else:
+                print(l + ' vs ' + d + ' finish : with no error')
+            print('------------------------------------')
+
+
+def retry_txt():
+    """
+        TxtRetryThread
+    """
+    for directory in FILE_DIR_LIST:
+        l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
+        for l in l_arr:
+            f_path = directory + folder[0] + l
+            print(f_path, l.split('.')[0])
+            # thread = TxtRetryThread(f_path)
+            # thread.start()
+
+
+def check():
+    """
+    check
+    """
+    for directory in FILE_DIR_LIST:
+        l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
+        for l in l_arr:
+            f_path = directory + folder[0] + l
+            # print(f_path)
+            txt_check(f_path, int(re.compile('-').split(l)[2]) - 1)
+        print('------ ' + directory + ' txt check finish -------')
+
+        d_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
+        for d in d_arr:
+            f_path = directory + folder[1] + d
+            xls_check(f_path, int(re.compile('-').split(d)[2]) - 1)
+        print('------ ' + directory + ' xls check finish -------')
+
+
+def retry_xls():
+    for directory in FILE_DIR_LIST:
+        l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
+        for l in l_arr:
+            f_path = os.getcwd() + directory + folder[1] + l
+            print(f_path)
+            thread = XlsRetryThread(f_path)
+            thread.start()
+
+
 if __name__ == '__main__':
-    # check('\\进口化妆品\\list\\' + '进口化妆品-list-2001-3000.txt', 2000)
-    for xls in list_arr:
-        f_path = '\\进口化妆品\\list\\' + xls
-        print(f_path, xls.split('.')[0])
-        thread = TxtRetryThread(f_path)
-        thread.start()
+    # check()
+    # retry_txt()
+    # retry_xls()
+    # txt_vs_xls()
+    fill_xls(FILE_DIR_LIST[0], '国产药品-list-5001-6000.txt', '国产药品-list-5001-6000.xls')
