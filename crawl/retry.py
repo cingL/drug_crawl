@@ -9,7 +9,7 @@ from selenium import webdriver
 from crawl import util
 from crawl.crawl_details import crawl_detail
 from crawl.crawl_list import get_ids
-from crawl.util import get_file_content, get_file_pd, folder, FILE_DIR_LIST, arrange, get_title
+from crawl.util import get_file_content, get_file_pd, folder, FILE_DIR_LIST
 
 
 def txt_retry(path):
@@ -291,30 +291,6 @@ def holy(path):
 
 
 if __name__ == '__main__':
-    # check()
-    # retry_txt()
-    # retry_xls()
-
-    # todo 从 2k开始漏了产品名称备注
-    # holy('\\进口化妆品\\detail\\进口化妆品-list-5001-6000.xls')
-    # holy('\\进口化妆品\\detail\\进口化妆品-list-6001-7000.xls')
-    # holy('\\进口化妆品\\detail\\进口化妆品-list-7001-8000.xls')
-
-    #
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-5001-6000.xls')  done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-7001-8000.xls')  done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-8001-9000.xls')  done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-9001-10000.xls')
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-10001-11000.xls') done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-11001-12000.xls')
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-12001-12809.xls')
-
-    # txt_vs_xls()
-    # name = '进口化妆品-list-9001-10000.xls'
-    # xls_check(FILE_DIR_LIST[0] + folder[1] + name, int(re.compile('-').split(name)[2]) - 1)
-    # fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-6001-7000.txt', '进口化妆品-list-6001-7000.xls') done
-    # fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-8001-9000.txt', '进口化妆品-list-8001-9000.xls')
-    fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-9001-10000.txt', '进口化妆品-list-9001-10000.xls')
-    # fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-10001-11000.txt', '进口化妆品-list-10001-11000.xls')
-    # fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-11001-12000.txt', '进口化妆品-list-11001-12000.xls')
-    # fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-12001-12809.txt', '进口化妆品-list-12001-12809.xls')
+    check()
+    retry_txt()
+    retry_xls()
