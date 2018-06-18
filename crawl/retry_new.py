@@ -166,7 +166,7 @@ def fill_xls(directory, l, d):
     browser = webdriver.Chrome()
     try:
         for l_line, d_line in zip_longest(list_content, range(detail_content.shape[0]), fillvalue=None):
-            txt_number = l_line.split('.')[0]
+            txt_number = str(l_line.split('.')[0])
             if d_line is None:
                 xls_number = -1
             else:
@@ -174,13 +174,16 @@ def fill_xls(directory, l, d):
             if not txt_number == xls_number:
                 print(txt_number + ' == ' + xls_number.__str__())
                 print(txt_number, l_line.split(',')[1])
-                detail = crawl_detail(browser, l_line.split(',')[1])
-                insert_str = pd.DataFrame([txt_number + ',id,' + str(l_line.split('=')[-1]).strip() + ',' \
-                                           + detail.__str__() + ',url,' + l_line.split(',')[1]])
-                detail_content = pd.DataFrame(pd.np.insert(detail_content.values, d_line, insert_str, axis=0))
-                # detail_content = pd.DataFrame(detail_content.append(insert_str, ignore_index=True))
-    except Exception as e:
-        detail_content.to_excel(os.getcwd() + directory + folder[1] + d, index=False)
+                url = l_line.split(',')[1]
+                drug_id = url.split('=')[-1]
+                detail = crawl_detail(browser, url)
+                if detail:
+                    detail[0] = txt_number
+                    detail.insert(1, str(drug_id).strip())
+                    detail_arr = arrange(detail[1:-8], l_line.split(',')[1])
+                    title = get_title(detail[1:-8])
+                    detail_content = detail_content.append(pd.DataFrame(columns=title, data=[detail_arr]),
+                                                           ignore_index=True, sort=False)
     finally:
         print('fill_xls() end')
         detail_content.to_excel(os.getcwd() + directory + folder[1] + d, index=False)

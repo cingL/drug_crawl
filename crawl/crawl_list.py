@@ -1,30 +1,13 @@
 import codecs
 import threading
 
-import pandas as pd
 import xlwt as xlwt
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 
-from crawl import param
-
-# PROXY = "61.101.178.32:1752"
-#
-#
-# def get_remote_driver():
-#     webdriver.DesiredCapabilities.CHROME['proxy'] = {
-#         "httpProxy": PROXY,
-#         "ftpProxy": PROXY,
-#         "sslProxy": PROXY,
-#         "noProxy": None,
-#         "proxyType": "MANUAL",
-#         "class": "org.openqa.selenium.Proxy",
-#         "autodetect": False
-#     }
-#     # you have to use remote, otherwise you'll have to code it yourself in python to
-#     return webdriver.Remote(webdriver.DesiredCapabilities.CHROME)
-from crawl.crawl_details import output_excel, crawl_detail
+from crawl import util
+from crawl.crawl_details import crawl_detail
 
 
 def get_ids(driver, html, times=0):
@@ -44,7 +27,7 @@ def get_ids(driver, html, times=0):
             for a in soup.find_all('a'):
                 href = a['href']
                 title = a.getText().strip()
-                details = param.get_detail_url(href)
+                details = util.get_detail_url(href)
                 urls[title] = details
     except TimeoutException as ex:
         print("Exception has been thrown. " + str(ex))
@@ -65,8 +48,8 @@ def do_crawl(index_arr):
     """
     :param index_arr: range()
     """
-    file_name = param.name + '-list-' + (index_arr[0]).__str__() + '-' + (index_arr[1] - 1).__str__() + '.txt'
-    xls_file_name = param.name + '-list-' + (index_arr[0]).__str__() + '-' + (index_arr[1] - 1).__str__() + '.xls'
+    file_name = util.name + '-list-' + (index_arr[0]).__str__() + '-' + (index_arr[1] - 1).__str__() + '.txt'
+    xls_file_name = util.name + '-list-' + (index_arr[0]).__str__() + '-' + (index_arr[1] - 1).__str__() + '.xls'
     book = xlwt.Workbook()
     sh = book.add_sheet('Sheet1')
     browser = webdriver.Chrome()
@@ -74,7 +57,7 @@ def do_crawl(index_arr):
     with codecs.open(file_name, 'wb', encoding='utf-8') as fp:
         col = 0
         for i in range(index_arr[0], index_arr[1]):
-            url = param.get_list_url(i)
+            url = util.get_list_url(i)
             # print(url)
             url_list = get_ids(browser, url)
             if url_list:
@@ -105,9 +88,9 @@ class CrawlThread(threading.Thread):
 
 
 if __name__ == '__main__':
-    while param.start < param.total:
-        end = param.start + param.step if param.step + param.start < param.total else param.total
-        print('(' + param.start.__str__() + ' , ' + end.__str__() + ')')
-        thread = CrawlThread([param.start, end])
+    while util.start < util.total:
+        end = util.start + util.step if util.step + util.start < util.total else util.total
+        print('(' + util.start.__str__() + ' , ' + end.__str__() + ')')
+        thread = CrawlThread([util.start, end])
         thread.start()
-        param.start += param.step
+        util.start += util.step
