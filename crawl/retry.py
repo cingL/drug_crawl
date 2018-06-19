@@ -110,7 +110,7 @@ def xls_check(path, start=0):
                 number = int(item.strip().split(',')[0]) - (15 * start)
                 if not number == int(index + 1):
                     error.append(item)
-                    print(index.__str__() + ' == ' + number.__str__())
+                    print(index.__str__() + ' == ' + number.__str__(), item)
         else:
             fail.append(item)
             # print(item)
@@ -177,10 +177,12 @@ def fill_xls(directory, l, d):
                 detail = crawl_detail(browser, l_line.split(',')[1])
                 insert_str = pd.DataFrame([txt_number + ',id,' + str(l_line.split('=')[-1]).strip() + ',' \
                                            + detail.__str__() + ',url,' + l_line.split(',')[1]])
-                detail_content = pd.DataFrame(pd.np.insert(detail_content.values, d_line, insert_str, axis=0))
-                # detail_content = pd.DataFrame(detail_content.append(insert_str, ignore_index=True))
-    except Exception as e:
-        detail_content.to_excel(os.getcwd() + directory + folder[1] + d, index=False)
+                if xls_number == -1:
+                    detail_content = pd.DataFrame(detail_content.append(insert_str, ignore_index=True))
+                else:
+                    detail_content = pd.DataFrame(pd.np.insert(detail_content.values, d_line, insert_str, axis=0))
+    # except Exception as e:
+    #     detail_content.to_excel(os.getcwd() + directory + folder[1] + d, index=False)
     finally:
         print('fill_xls() end')
         detail_content.to_excel(os.getcwd() + directory + folder[1] + d, index=False)
@@ -206,13 +208,13 @@ def compare_txt_xls(d, directory, l):
     detail_content = get_file_pd(directory + folder[1] + d)
     error = []
     for l_line, d_line in zip_longest(list_content, range(detail_content.shape[0]), fillvalue=None):
-        txt_number = l_line.split('.')[0]
+        txt_number = str(l_line.split('.')[0])
         if d_line is None:
             xls_number = -1
         else:
             xls_number = str(detail_content.iat[d_line, 0]).split(',')[0]
         if not txt_number == xls_number:
-            # print(txt_number, xls_number)
+            # print('list No. : ' + txt_number + ' == ' + xls_number)
             error.append(txt_number)
     if error.__len__():
         print(l + ' vs ' + d + ' finish : with ' + error.__len__().__str__() + ' error found')
@@ -292,5 +294,22 @@ def holy(path):
 
 if __name__ == '__main__':
     check()
-    retry_txt()
-    retry_xls()
+    # retry_txt()
+    # retry_xls()
+
+    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-5001-6000.xls')  done
+    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-7001-8000.xls')  done
+    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-8001-9000.xls')
+    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-9001-10000.xls')
+    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-10001-11000.xls') done
+    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-11001-12000.xls') done
+    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-12001-12809.xls') done
+
+    # txt_vs_xls()
+    name = '进口化妆品-list-9001-10000.xls'
+    # name = '进口化妆品-list-10001-11000.xls'
+    l_name = '进口化妆品-list-9001-10000.txt'
+    # l_name = '进口化妆品-list-10001-11000.txt'
+    # xls_check(FILE_DIR_LIST[0] + folder[1] + name, int(re.compile('-').split(name)[2]) - 1)
+    # compare_txt_xls(name, FILE_DIR_LIST[0], l_name)
+    # # fill_xls(FILE_DIR_LIST[0], l_name, name)
