@@ -1,3 +1,5 @@
+import codecs
+import math
 import os
 import re
 import threading
@@ -7,90 +9,31 @@ import pandas as pd
 from selenium import webdriver
 
 from crawl import util
-from crawl.crawl_details import crawl_detail
+from crawl.crawl_details_new import crawl_detail
 from crawl.crawl_list import get_ids
-from crawl.util import get_file_content, get_file_pd, folder, FILE_DIR_LIST, arrange, get_title
+from crawl.util import get_file_content, get_file_pd, folder, FILE_DIR_LIST, arrange, get_title, output_form
 
 
-def txt_retry(path):
+def check():
     """
-    replace 'page xx crawl failed' in txt
-    :param path:
-    :return:
+    check
+    检查全部输出的文件
+    fail -> 没抓取到的数据
+    error -> 编号没对上的数据，错一个后面全部跪，数值很大，不要被吓坏
     """
-    content = get_file_content(path)
+    for directory in FILE_DIR_LIST:
+        l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
+        for l in l_arr:
+            f_path = directory + folder[0] + l
+            # print(f_path)
+            txt_check(f_path, int(re.compile('-').split(l)[2]) - 1)
+        print('------ ' + directory + ' txt check finish -------')
 
-    txt_file = pd.DataFrame(content)
-    browser = webdriver.Chrome()
-    try:
-        for row in reversed(range(txt_file.shape[0])):
-            s = str(txt_file.iat[row, 0]).strip()
-            if not s:
-                txt_file.drop(row)
-            if s.__contains__('failed'):
-                page = s.split(' ')[1]
-                print(path + ' , ' + page)
-                url_dir = get_ids(browser, util.get_list_url(page))
-                if url_dir:
-                    count = 0
-                    txt_file = txt_file.drop([row], axis=0)
-                    for k, v in url_dir.items():
-                        new_str = '{name},{urls}'.format(name=k, urls=v + '\n')
-                        txt_file = pd.DataFrame(pd.np.insert(txt_file.values, row + count, [new_str]))
-                        count += 1
-        txt_file.sort_index(axis=0)
-    except Exception as e:
-        print('txt_retry() Exception : ' + e.__str__())
-    finally:
-        pd.np.savetxt(os.getcwd() + path, txt_file.values, fmt='%s', encoding='utf-8', newline='')
-        print('txt_retry() ' + path + ' finish.')
-
-
-def xls_retry(path):
-    """
-    replace None in xls
-    :param path:
-    :return:
-    """
-    count = (int(path.split('-')[2]) - 1) * 15
-    data = pd.read_excel(path, sheet_name='Sheet1')
-    browser = webdriver.Chrome()
-    try:
-        for row in range(data.shape[0]):
-            s = str(data.iat[row, 0])
-            if s.__contains__(',None'):
-                print((count + row).__str__(), s)
-                arr = data.iat[row, 0].split(',')
-                detail = crawl_detail(browser, arr[-1])
-                if detail:
-                    # new_str = combine_str(arr, detail)
-                    data = data.drop([row], axis=0)
-                    new_str = (count + row + 1).__str__() + ',id,' + str(arr[-1]).split('=')[-1] + ',' \
-                              + detail.__str__() + ',url,' + arr[-1]
-                    print(new_str)
-                    data = pd.DataFrame(pd.np.insert(data.values, row, [new_str], axis=0))
-    finally:
-        data.to_excel(path, index=False)
-
-
-class XlsRetryThread(threading.Thread):
-    def __init__(self, file_path):
-        threading.Thread.__init__(self)
-        self.file_path = file_path
-
-    def run(self):
-        print('starting ' + self.file_path)
-        xls_retry(self.file_path)
-
-
-class TxtRetryThread(threading.Thread):
-    def __init__(self, file_path):
-        threading.Thread.__init__(self)
-        self.file_path = file_path
-
-    def run(self):
-        print('starting ' + self.file_path)
-        txt_retry(self.file_path)
+        d_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
+        for d in d_arr:
+            f_path = directory + folder[1] + d
+            xls_check(f_path, int(re.compile('-').split(d)[2]) - 1)
+        print('------ ' + directory + ' xls check finish -------')
 
 
 def xls_check(path, start=0):
@@ -154,15 +97,144 @@ def txt_check(path, start=0):
         print('check ' + path + ' finish : with no error')
 
 
+def txt_retry(path):
+    """
+    replace 'page xx crawl failed' in txt
+    :param path:
+    :return:
+    """
+    content = get_file_content(path)
+
+    txt_file = pd.DataFrame(content)
+    browser = webdriver.Chrome()
+    try:
+        for row in reversed(range(txt_file.shape[0])):
+            s = str(txt_file.iat[row, 0]).strip()
+            if not s:
+                txt_file.drop(row)
+            if s.__contains__('failed'):
+                page = s.split(' ')[1]
+                print(path + ' , ' + page)
+                url_dir = get_ids(browser, util.get_list_url(page))
+                if url_dir:
+                    count = 0
+                    txt_file = txt_file.drop([row], axis=0)
+                    for k, v in url_dir.items():
+                        new_str = '{name},{urls}'.format(name=k, urls=v + '\n')
+                        txt_file = pd.DataFrame(pd.np.insert(txt_file.values, row + count, [new_str]))
+                        count += 1
+        txt_file.sort_index(axis=0)
+    except Exception as e:
+        print('txt_retry() Exception : ' + e.__str__())
+    finally:
+        pd.np.savetxt(os.getcwd() + path, txt_file.values, fmt='%s', encoding='utf-8', newline='')
+        print('txt_retry() ' + path + ' finish.')
+
+
+def xls_retry(path):
+    """
+    replace None in xls
+    :param path:
+    :return:
+    """
+    count = (int(path.split('-')[2]) - 1) * 15
+    data = pd.read_excel(path, sheet_name='Sheet1')
+    browser = webdriver.Chrome()
+    try:
+        for row in range(data.shape[0]):
+            s = str(data.iat[row, 0])
+            if s.__contains__(',None'):
+                print((count + row).__str__(), s)
+                arr = data.iat[row, 0].split(',')
+                detail = crawl_detail(browser, arr[-1])
+                if detail:
+                    # new_str = combine_str(arr, detail) todo
+                    data = data.drop([row], axis=0)
+                    new_str = (count + row + 1).__str__() + ',id,' + str(arr[-1]).split('=')[-1] + ',' \
+                              + detail.__str__() + ',url,' + arr[-1]
+                    print(new_str)
+                    data = pd.DataFrame(pd.np.insert(data.values, row, [new_str], axis=0))
+    finally:
+        data.to_excel(path, index=False)
+
+
+class XlsRetryThread(threading.Thread):
+    def __init__(self, file_path):
+        threading.Thread.__init__(self)
+        self.file_path = file_path
+
+    def run(self):
+        print('starting ' + self.file_path)
+        xls_retry(self.file_path)
+
+
+class TxtRetryThread(threading.Thread):
+    def __init__(self, file_path):
+        threading.Thread.__init__(self)
+        self.file_path = file_path
+
+    def run(self):
+        print('starting ' + self.file_path)
+        txt_retry(self.file_path)
+
+
+def fill_txt(directory, l):
+    """
+    只适用于填补。┑(￣Д ￣)┍
+    txt有fail的话，请用 retry_txt()
+    append
+    :param directory:
+    :param l:
+    :return:
+    """
+    end = int((l.split('-')[3]).split('.')[0])
+    list_content = get_file_content(directory + folder[0] + l)
+    last_index = list_content.__len__()
+    from_page = math.ceil(last_index / 15)
+    last_content = (from_page - 1) * 15
+    list_content = list_content[0:last_content + 1]
+    # print(list_content.__len__())
+    browser = webdriver.Chrome()
+    while from_page <= end:
+        try:
+            url = util.get_list_url(from_page)
+            print('page ' + from_page.__str__() + ' , ' + url)
+            url_list = get_ids(browser, url)
+            try:
+                for k, v in url_list.items():
+                    if not v.startswith('http'):
+                        raise Exception('cannot get page content : ' + k + ',' + v)
+                    append_str = k + ',' + v
+                    list_content.append('\n' + append_str)
+                    # print(append_str)
+            except:
+                list_content.append('page ' + from_page.__str__() + ' crawl failed')
+                print('page ' + from_page.__str__() + ' crawl failed')
+        except Exception as e:
+            list_content.append('page ' + from_page.__str__() + ' crawl failed')
+            print('page ' + from_page.__str__() + ' crawl failed, with exception : ' + e.__str__())
+            continue
+        finally:
+            from_page += 1
+    with codecs.open(os.getcwd() + directory + folder[0] + l, 'wb', encoding='utf-8') as f:
+        f.write(''.join(list_content))
+        f.close()
+
+
 def fill_xls(directory, l, d):
     """
-    insert
+    填补xls
+    insert and append
+    注意，错误该格仔会填充成 XXX crawl failed XXX
+    fail多半是内容格式……emmm……太花哨
+
     :param directory: category
     :param l: list file,txt
     :param d: detail file,xls
     """
     list_content = get_file_content(directory + folder[0] + l)
     detail_content = get_file_pd(directory + folder[1] + d)
+    start = (int(re.compile('-').split(d)[2]) - 1) * 15
     browser = webdriver.Chrome()
     try:
         for l_line, d_line in zip_longest(list_content, range(detail_content.shape[0]), fillvalue=None):
@@ -173,25 +245,66 @@ def fill_xls(directory, l, d):
                 xls_number = str(detail_content.iat[d_line, 0]).split(',')[0]
             if not txt_number == xls_number:
                 print(txt_number + ' == ' + xls_number.__str__())
-                print(txt_number, l_line.split(',')[1])
-                url = l_line.split(',')[1]
-                drug_id = url.split('=')[-1]
+                # print(txt_number, l_line.split(',')[1])
+                url = l_line.split(',')[-1]
                 detail = crawl_detail(browser, url)
                 if detail:
-                    detail[0] = txt_number
-                    detail.insert(1, str(drug_id).strip())
-                    detail_arr = arrange(detail[1:-8], l_line.split(',')[1])
-                    title = get_title(detail[1:-8])
-                    detail_content = detail_content.append(pd.DataFrame(columns=title, data=[detail_arr]),
-                                                           ignore_index=True, sort=False)
+                    try:
+                        drug_id = url.split('=')[-1]
+                        detail.insert(1, str(drug_id).strip())
+                        detail.insert(1, txt_number)
+                        detail_arr = arrange(detail, url)
+                        title = get_title(detail)
+                        print(detail_arr)
+                        print('detail:' + detail_arr.__len__().__str__())
+                        print(title)
+                        print('title:' + title.__len__().__str__())
+                        if xls_number == -1:  # append
+                            detail_content = detail_content.append(pd.DataFrame(columns=title, data=[detail_arr]),
+                                                                   ignore_index=True, sort=False)
+                        else:  # insert
+                            detail_content = pd.DataFrame(
+                                data=pd.np.insert(detail_content.values, int(txt_number) - start - 1, detail_arr,
+                                                  axis=0),
+                                columns=title)
+                    except Exception as e:
+                        detail_content = pd.DataFrame(
+                            data=pd.np.insert(detail_content.values, int(txt_number) - start - 1,
+                                              [txt_number + 'crawl failed, with ' + e.__str__()],
+                                              axis=0))
+                        continue
     finally:
         print('fill_xls() end')
+        browser.close()
         detail_content.to_excel(os.getcwd() + directory + folder[1] + d, index=False)
+
+
+class TxtFillThread(threading.Thread):
+    def __init__(self, directory, list_file):
+        threading.Thread.__init__(self)
+        self.directory = directory
+        self.list_file = list_file
+
+    def run(self):
+        print('starting ' + self.list_file)
+        fill_txt(self.directory, self.list_file)
+
+
+class XlsFillThread(threading.Thread):
+    def __init__(self, directory, list_file, detail_file):
+        threading.Thread.__init__(self)
+        self.directory = directory
+        self.list_file = list_file
+        self.detail_file = detail_file
+
+    def run(self):
+        print('starting ' + self.list_file + ' vs ' + self.detail_file)
+        fill_xls(self.directory, self.list_file, self.detail_file)
 
 
 def txt_vs_xls(direct=None, txt_list=None, detail=None):
     """
-       txt_vs_xls
+    用 txt 的序号 和 xls 的序号进行比对
     """
     if direct and txt_list and detail is not None:
         compare_txt_xls(detail, direct, txt_list)
@@ -209,13 +322,14 @@ def compare_txt_xls(d, directory, l):
     detail_content = get_file_pd(directory + folder[1] + d)
     error = []
     for l_line, d_line in zip_longest(list_content, range(detail_content.shape[0]), fillvalue=None):
-        txt_number = l_line.split('.')[0]
+        # print(l_line, int(detail_content.iat[d_line, 0]))
+        txt_number = int(l_line.split('.')[0])
         if d_line is None:
             xls_number = -1
         else:
-            xls_number = str(detail_content.iat[d_line, 0]).split(',')[0]
+            xls_number = int(detail_content.iat[d_line, 0])
         if not txt_number == xls_number:
-            # print(txt_number, xls_number)
+            print(txt_number, xls_number)
             error.append(txt_number)
     if error.__len__():
         print(l + ' vs ' + d + ' finish : with ' + error.__len__().__str__() + ' error found')
@@ -237,25 +351,6 @@ def retry_txt():
             thread.start()
 
 
-def check():
-    """
-    check
-    """
-    for directory in FILE_DIR_LIST:
-        l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
-        for l in l_arr:
-            f_path = directory + folder[0] + l
-            # print(f_path)
-            txt_check(f_path, int(re.compile('-').split(l)[2]) - 1)
-        print('------ ' + directory + ' txt check finish -------')
-
-        d_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
-        for d in d_arr:
-            f_path = directory + folder[1] + d
-            xls_check(f_path, int(re.compile('-').split(d)[2]) - 1)
-        print('------ ' + directory + ' xls check finish -------')
-
-
 def retry_xls():
     for directory in FILE_DIR_LIST:
         l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
@@ -266,34 +361,11 @@ def retry_xls():
             thread.start()
 
 
-def holy(path):
+def compare_url():
     """
-    化妆品补字段（。
-    :param path:
+    txt 的 link 的 id  VS xls 的数据 id
     :return:
     """
-    data = get_file_pd(path)
-    browser = webdriver.Chrome()
-    try:
-        for line in range(data.shape[0]):
-            s = str(data.iat[line, 0])
-            if not s.__contains__('产品名称备注'):
-                # print(s)
-                arr = s.split(',')
-                detail_str = crawl_detail(browser, arr[-1])
-                if detail_str:
-                    detail_arr = detail_str.split(',')
-                    # print(detail_arr)
-                    arr.insert(-2, detail_arr[-2])
-                    arr.insert(-2, detail_arr[-1])
-                    print(arr)
-                    data = data.drop([line], axis=0)
-                    data = pd.DataFrame(pd.np.insert(data.values, line, [','.join(arr)], axis=0))
-    finally:
-        data.to_excel(os.getcwd() + '\\' + path, index=False)
-
-
-def compare_url():
     for directory in FILE_DIR_LIST:
         l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
         d_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
@@ -305,36 +377,50 @@ def compare_url():
             for l_line, d_line in zip(list_content, range(detail_content.shape[0])):
                 l_url = str(l_line).split(',')[-1].strip()
                 l_id = int(l_url.split('=')[-1])
-                d_id = str(detail_content.iat[d_line, 0])
-                try:
-                    d_id = int(d_id)
-                except:
-                    d_id = d_id.split(',')[-1].strip().split('=')[-1]
-                if l_id != int(d_id):
+                # print(l_line, d_line)
+                d_id = int(detail_content.iat[d_line, 1])
+                # try:
+                #     d_id = int(d_id)
+                # except:
+                #     d_id = d_id.split(',')[-1].strip().split('=')[-1]
+                if l_id != d_id:
                     error.append(l_line.split('.')[0])
-                    # print('row ' + l_line.split('.')[0] + ' : ' + l_id.__str__() + ' == ' + d_id)
-                break
+                    print('row ' + l_line.split('.')[0].__str__() + ' : ' + l_id.__str__() + ' == ' + d_id.__str__())
             if error.__len__():
                 print('with ' + error.__len__().__str__() + ' error has found')
             print('--------------------------------')
 
 
+def fill_all_txt(directory):
+    l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
+    for list_file in l_arr:
+        TxtFillThread(directory, list_file).start()
+
+
+def fill_all_xls(directory):
+    l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
+    d_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
+    for list_file, detail_file in zip(l_arr, d_arr):
+        thread = XlsFillThread(directory, list_file, detail_file)
+        thread.start()
+
+
 if __name__ == '__main__':
-    check()
+    """检查 fail 和 数据缺失"""
+    # check()
+
+    """消灭 failed"""
     # retry_txt()
     # retry_xls()
 
-    # file_field()
+    """填补缺失数据"""
+    # fill_all_txt(FILE_DIR_LIST[0])
+    # fill_all_xls(FILE_DIR_LIST[0])
 
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-10001-11000.xls')
-
-    compare_url()
-
+    """以url比对"""
+    # compare_url()
+    """以序号比对"""
     # txt_vs_xls()
-    # name = '进口化妆品-list-10001-11000.xls'
-    # l_name = '进口化妆品-list-10001-11000.txt'
-    # xls_check(FILE_DIR_LIST[0] + folder[1] + name, int(re.compile('-').split(name)[2]) - 1)
-    # compare_txt_xls(name, FILE_DIR_LIST[0], l_name)
-    # fill_xls(FILE_DIR_LIST[0], l_name, name)
 
-    # output_form(FILE_DIR_LIST[0])
+    """合并文件"""
+    output_form(FILE_DIR_LIST[0])

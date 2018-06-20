@@ -5,6 +5,29 @@ from urllib import parse
 
 import pandas as pd
 
+# ----------！！！请修改以下参数！！！------------------
+# ----------！！！具体请参考注释！！！------------------
+# ----------！！！每个类别取的字段数不一样！！！----------
+# ----------！！！请按需求修改 field_count 取字段！！！----------
+total = 11075 + 1   # 总页数，修改 + 1前的数值即可
+step = 1000         # 每x页一个文件（15条数据一页）
+start = 0 + 1       # 从X页开始开始，修改 + 1前的数值即可
+
+name = '进口器械'
+field_count = -4
+tableId = '27'
+tableName = 'TABLE27'
+bcId = '118103063506935484150101953610'
+folder = ['list\\', 'detail\\']
+FILE_DIR_LIST = [
+    # '\\国产药品\\',
+    # '\\进口化妆品\\',
+    # '\\国产特殊用途化妆品\\'
+    '\\进口器械\\'
+]
+# -----------------------------------------------
+
+
 """
 国产药品
 field_count = -7
@@ -43,27 +66,10 @@ tableName=TABLE27
 bcId=118103063506935484150101953610
 """
 
-# ----------！每个类别取的字段数不一样！----------
-total = 11075 + 1
-step = 1000
-start = 0 + 1
-
-field_count = -7
-name = '国产药品'
-tableId = '25'
-tableName = 'TABLE25'
-bcId = '124356560303886909015737447882'
-folder = ['list\\', 'detail\\']
-FILE_DIR_LIST = [
-    # '\\国产药品\\',
-    # '\\进口化妆品\\',
-    # '\\国产特殊用途化妆品\\'
-    '\\进口器械\\'
-]
-
 
 def get_detail_url(a_href):
     """
+    生成详细页url
     http://app1.sfda.gov.cn/datasearch/face3/content.jsp?tableId=68&tableName=TABLE68&tableView=国产特殊用途化妆品&Id=26378
     :param a_href:
     :return:
@@ -79,6 +85,7 @@ def get_detail_url(a_href):
 
 def get_list_url(index):
     """
+    生成list页url
     http://app1.sfda.gov.cn/datasearch/face3/search.jsp?tableId=69&bcId=124053679279972677481528707165&tableName=TABLE69&curstart=4386&tableView=%E8%BF%9B%E5%8F%A3%E5%8C%96%E5%A6%86%E5%93%81&State=1
     :param index:
     :return:
@@ -94,12 +101,17 @@ def get_list_url(index):
 
 
 def get_file_pd(path):
+    """
+    读取 xls 文件
+    :param path:
+    :return: DataFrame
+    """
     return pd.read_excel(os.getcwd() + path, sheet_name='Sheet1')
 
 
 def get_file_content(file):
     """
-    get the content of file
+    读取 txt 文件
     :param file: file path
     :return: an array with file content
     """
@@ -112,6 +124,11 @@ def get_file_content(file):
 
 
 def arrange(arr, url):
+    """
+    :param arr:
+    :param url:
+    :return: array, 每条数据的值
+    """
     result = []
     arr.pop(0)
     arr.insert(0, 'No.')
@@ -123,7 +140,12 @@ def arrange(arr, url):
 
 
 def get_title(arr):
-    print(arr.__len__().__str__())
+    """
+    表头
+    :param arr:
+    :return:
+    """
+    # print(arr.__len__().__str__())
     arr.pop(0)
     arr.insert(0, 'No.')
     result = []
@@ -134,17 +156,27 @@ def get_title(arr):
 
 
 def output_form(directory):
-    all_xls = pd.DataFrame()
+    """
+    todo 未解bug：
+    openpyxl.utils.exceptions.IllegalCharacterError
+
+    :param directory:
+    :return:
+    """
+    # all_xls = pd.DataFrame()
     d_arr = [f for f in os.listdir(os.getcwd() + '\\' + directory + folder[1]) if f[-3:] == 'xls']
     d_arr = sorted(d_arr, key=lambda f: int(f.split('-')[2]))
     # print(d_arr)
+    all_data = []
     with pd.ExcelWriter(name + '.xlsx') as writer:
         try:
             for xls in d_arr:
                 print(xls)
                 data = get_file_pd('\\' + directory + folder[1] + xls)
-                all_xls = all_xls.append(data, ignore_index=True, sort=False)
+                all_data.append(data)
+                # all_xls = all_xls.append(data, ignore_index=True, sort=False)
         finally:
-            print(all_xls)
+            # print(all_xls)
+            all_xls = pd.concat(all_data)
             all_xls.to_excel(writer, merge_cells=False, index=False)
     writer.close()

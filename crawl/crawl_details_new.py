@@ -9,6 +9,15 @@ from crawl.util import FILE_DIR_LIST, folder, get_title, get_file_content, arran
 
 
 def crawl_detail(browser, url, times=0):
+    """
+    todo bug
+    返回adminXXXXX
+
+    :param browser:
+    :param url:
+    :param times:
+    :return:
+    """
     detail_arr = []
     try:
         browser.get(url)
@@ -19,8 +28,6 @@ def crawl_detail(browser, url, times=0):
             all_td = table.find_all('td')
             for td in all_td:
                 detail_arr.append(td.getText().strip())
-                # detail_str += td.getText().strip() + ','
-            # detail_str = cut(detail_str)
     # except Exception as ex:
     #     print("crawl_detail : Exception has been thrown. " + str(ex))
     finally:
@@ -70,11 +77,11 @@ class CrawlDetailThread(threading.Thread):
         output_excel(self.file, self.name)
 
 
-if __name__ == '__main__':
-    for directory in FILE_DIR_LIST:
-        list_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
-        for txt in list_arr:
-            file_path = os.getcwd() + directory + folder[0] + txt
-            print(file_path, txt.split('.')[0])
-            thread = CrawlDetailThread(file_path, txt.split('.')[0])
-            thread.start()
+# if __name__ == '__main__':
+#     for directory in FILE_DIR_LIST:
+#         list_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
+#         for txt in list_arr:
+#             file_path = os.getcwd() + directory + folder[0] + txt
+#             print(file_path, txt.split('.')[0])
+#             thread = CrawlDetailThread(file_path, txt.split('.')[0])
+#             thread.start()

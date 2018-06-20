@@ -31,7 +31,6 @@ def get_ids(driver, html, times=0):
                 urls[title] = details
     # except TimeoutException as ex:
     #     print("Exception has been thrown. " + str(ex))
-    #     raise ex
     finally:
         if urls:
             return urls
@@ -87,7 +86,7 @@ def do_crawl(index_arr):
                     detail_content.to_excel(xls_file_name, index=False)
             else:
                 fp.write('\npage ' + i.__str__() + ' crawl failed')
-                print('\npage ' + i.__str__() + ' crawl failed')
+                print('\n ')
         fp.close()
     # browser.close()
 
