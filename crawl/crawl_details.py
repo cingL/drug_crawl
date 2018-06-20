@@ -13,7 +13,7 @@ from crawl.util import FILE_DIR_LIST, folder
 
 def cut(result):
     arr = re.compile(',').split(result)
-    arr = arr[1:-7]
+    arr = arr[1:util.field_count]
     # print(''.join(arr))
     return ','.join(arr)
 

@@ -110,7 +110,7 @@ def xls_check(path, start=0):
                 number = int(item.strip().split(',')[0]) - (15 * start)
                 if not number == int(index + 1):
                     error.append(item)
-                    print(index.__str__() + ' == ' + number.__str__())
+                    # print(index.__str__() + ' == ' + number.__str__())
         else:
             fail.append(item)
             # print(item)
@@ -143,10 +143,10 @@ def txt_check(path, start=0):
                 number = int(item.strip().split('.')[0]) - (15 * start)
                 if not number == index + 1:
                     error.append(item)
-                    print(index.__str__() + ' == ' + item)
+                    # print(index.__str__() + ' == ' + item)
         else:
             fail.append(item)
-            print(item)
+            # print(item)
     if error.__len__() or fail.__len__():
         print(
             'check ' + path + ' finish : with ' + fail.__len__().__str__() + ' failed and ' + error.__len__().__str__() + ' error index has found')
@@ -293,31 +293,48 @@ def holy(path):
         data.to_excel(os.getcwd() + '\\' + path, index=False)
 
 
+def compare_url():
+    for directory in FILE_DIR_LIST:
+        l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
+        d_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
+        for l, d in zip(l_arr, d_arr):
+            print(l + ' vs ' + d)
+            error = []
+            list_content = get_file_content(directory + folder[0] + l)
+            detail_content = get_file_pd(directory + folder[1] + d)
+            for l_line, d_line in zip(list_content, range(detail_content.shape[0])):
+                l_url = str(l_line).split(',')[-1].strip()
+                l_id = int(l_url.split('=')[-1])
+                d_id = str(detail_content.iat[d_line, 0])
+                try:
+                    d_id = int(d_id)
+                except:
+                    d_id = d_id.split(',')[-1].strip().split('=')[-1]
+                if l_id != int(d_id):
+                    error.append(l_line.split('.')[0])
+                    # print('row ' + l_line.split('.')[0] + ' : ' + l_id.__str__() + ' == ' + d_id)
+                break
+            if error.__len__():
+                print('with ' + error.__len__().__str__() + ' error has found')
+            print('--------------------------------')
+
+
 if __name__ == '__main__':
-    # check()
+    check()
     # retry_txt()
     # retry_xls()
 
-    # todo 从 2k开始漏了产品名称备注
-    # holy('\\进口化妆品\\detail\\进口化妆品-list-5001-6000.xls')
-    # holy('\\进口化妆品\\detail\\进口化妆品-list-6001-7000.xls')
-    # holy('\\进口化妆品\\detail\\进口化妆品-list-7001-8000.xls')
+    # file_field()
 
-    #
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-5001-6000.xls')  done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-7001-8000.xls')  done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-8001-9000.xls')  done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-9001-10000.xls')
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-10001-11000.xls') done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-11001-12000.xls')
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-12001-12809.xls')
+    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-10001-11000.xls')
+
+    compare_url()
 
     # txt_vs_xls()
-    # name = '进口化妆品-list-9001-10000.xls'
+    # name = '进口化妆品-list-10001-11000.xls'
+    # l_name = '进口化妆品-list-10001-11000.txt'
     # xls_check(FILE_DIR_LIST[0] + folder[1] + name, int(re.compile('-').split(name)[2]) - 1)
-    # fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-6001-7000.txt', '进口化妆品-list-6001-7000.xls') done
-    # fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-8001-9000.txt', '进口化妆品-list-8001-9000.xls')
-    fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-9001-10000.txt', '进口化妆品-list-9001-10000.xls')
-    # fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-10001-11000.txt', '进口化妆品-list-10001-11000.xls')
-    # fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-11001-12000.txt', '进口化妆品-list-11001-12000.xls')
-    # fill_xls(FILE_DIR_LIST[0], '进口化妆品-list-12001-12809.txt', '进口化妆品-list-12001-12809.xls')
+    # compare_txt_xls(name, FILE_DIR_LIST[0], l_name)
+    # fill_xls(FILE_DIR_LIST[0], l_name, name)
+
+    # output_form(FILE_DIR_LIST[0])

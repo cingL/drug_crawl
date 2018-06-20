@@ -52,7 +52,7 @@ def xls_retry(path):
     :param path:
     :return:
     """
-    count = (int(path.split('-')[2]) - 1) * 15
+    count = (int(path.split('-')[-2]) - 1) * 15
     data = pd.read_excel(path, sheet_name='Sheet1')
     browser = webdriver.Chrome()
     try:
@@ -208,13 +208,14 @@ def compare_txt_xls(d, directory, l):
     detail_content = get_file_pd(directory + folder[1] + d)
     error = []
     for l_line, d_line in zip_longest(list_content, range(detail_content.shape[0]), fillvalue=None):
-        txt_number = str(l_line.split('.')[0])
-        if d_line is None:
+        try:
+            txt_number = int(l_line.split('.')[0])
+            xls_number = int(str(detail_content.iat[d_line, 0]).split(',')[0])
+        except:
+            txt_number = -1
             xls_number = -1
-        else:
-            xls_number = str(detail_content.iat[d_line, 0]).split(',')[0]
         if not txt_number == xls_number:
-            # print('list No. : ' + txt_number + ' == ' + xls_number)
+            print('list No. : ' + txt_number.__str__() + ' == ' + xls_number.__str__())
             error.append(txt_number)
     if error.__len__():
         print(l + ' vs ' + d + ' finish : with ' + error.__len__().__str__() + ' error found')
@@ -241,12 +242,12 @@ def check():
     check
     """
     for directory in FILE_DIR_LIST:
-        l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
-        for l in l_arr:
-            f_path = directory + folder[0] + l
-            # print(f_path)
-            txt_check(f_path, int(re.compile('-').split(l)[2]) - 1)
-        print('------ ' + directory + ' txt check finish -------')
+        # l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
+        # for l in l_arr:
+        #     f_path = directory + folder[0] + l
+        #     # print(f_path)
+        #     txt_check(f_path, int(re.compile('-').split(l)[2]) - 1)
+        # print('------ ' + directory + ' txt check finish -------')
 
         d_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
         for d in d_arr:
@@ -289,27 +290,58 @@ def holy(path):
                     data = data.drop([line], axis=0)
                     data = pd.DataFrame(pd.np.insert(data.values, line, [','.join(arr)], axis=0))
     finally:
-        data.to_excel(os.getcwd() + '\\' + path, index=False)
+        print(path + ' holy() end')
+        data.to_excel(os.getcwd() + path, index=False)
+
+
+def file_field():
+    d_arr = [f for f in os.listdir(os.getcwd() + '\\进口化妆品\\' + folder[1]) if f[-3:] == 'xls']
+    for each_d in d_arr:
+        threading.Thread(target=lambda: holy('\\进口化妆品\\' + folder[1] + each_d)).start()
+
+
+def compare_url():
+    for directory in FILE_DIR_LIST:
+        l_arr = [f for f in os.listdir(os.getcwd() + directory + folder[0]) if f[-3:] == 'txt']
+        d_arr = [f for f in os.listdir(os.getcwd() + directory + folder[1]) if f[-3:] == 'xls']
+        for l, d in zip(l_arr, d_arr):
+            print(l + ' vs ' + d)
+            error = []
+            list_content = get_file_content(directory + folder[0] + l)
+            detail_content = get_file_pd(directory + folder[1] + d)
+            for l_line, d_line in zip(list_content, range(detail_content.shape[0])):
+                l_url = str(l_line).split(',')[-1].strip()
+                l_id = int(l_url.split('=')[-1])
+                d_id = str(detail_content.iat[d_line, 0])
+                try:
+                    d_id = int(d_id)
+                except:
+                    d_id = d_id.split(',')[-1].strip().split('=')[-1]
+                if l_id != int(d_id):
+                    error.append(l_line.split('.')[0])
+                    # print('row ' + l_line.split('.')[0] + ' : ' + l_id.__str__() + ' == ' + d_id)
+                break
+            if error.__len__():
+                print('with ' + error.__len__().__str__() + ' error has found')
+            print('--------------------------------')
 
 
 if __name__ == '__main__':
-    check()
+    # check()
     # retry_txt()
     # retry_xls()
 
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-5001-6000.xls')  done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-7001-8000.xls')  done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-8001-9000.xls')
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-9001-10000.xls')
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-10001-11000.xls') done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-11001-12000.xls') done
-    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-12001-12809.xls') done
+    # file_field()
+
+    # xls_retry(os.getcwd() + '\\进口化妆品\\detail\\进口化妆品-list-10001-11000.xls')
+
+    compare_url()
 
     # txt_vs_xls()
-    name = '进口化妆品-list-9001-10000.xls'
     # name = '进口化妆品-list-10001-11000.xls'
-    l_name = '进口化妆品-list-9001-10000.txt'
     # l_name = '进口化妆品-list-10001-11000.txt'
     # xls_check(FILE_DIR_LIST[0] + folder[1] + name, int(re.compile('-').split(name)[2]) - 1)
     # compare_txt_xls(name, FILE_DIR_LIST[0], l_name)
-    # # fill_xls(FILE_DIR_LIST[0], l_name, name)
+    # fill_xls(FILE_DIR_LIST[0], l_name, name)
+
+    # output_form(FILE_DIR_LIST[0])
