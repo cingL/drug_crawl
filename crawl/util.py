@@ -9,21 +9,24 @@ import pandas as pd
 # ----------！！！具体请参考注释！！！------------------
 # ----------！！！每个类别取的字段数不一样！！！----------
 # ----------！！！请按需求修改 field_count 取字段！！！----------
-total = 11075 + 1   # 总页数，修改 + 1前的数值即可
-step = 1000         # 每x页一个文件（15条数据一页）
-start = 0 + 1       # 从X页开始开始，修改 + 1前的数值即可
+total = 1113 + 1  # 总页数，修改 + 1前的数值即可
+step = 1000  # 每x页一个文件（15条数据一页）
+start = 0 + 1  # 从X页开始开始，修改 + 1前的数值即可
 
-name = '进口器械'
-field_count = -4
-tableId = '27'
-tableName = 'TABLE27'
-bcId = '118103063506935484150101953610'
+name = '国产保健食品'
+field_count = -6
+tableId = '30'
+tableName = 'TABLE30'
+bcId = '118103385532690845640177699192'
 folder = ['list\\', 'detail\\']
 FILE_DIR_LIST = [
     # '\\国产药品\\',
     # '\\进口化妆品\\',
     # '\\国产特殊用途化妆品\\'
-    '\\进口器械\\'
+    # '\\进口器械\\'
+    # '\\进口药品\\'
+    '\\国产保健食品\\'
+    # '\\进口保健食品\\'
 ]
 # -----------------------------------------------
 
@@ -32,17 +35,39 @@ FILE_DIR_LIST = [
 国产药品
 field_count = -7
 共11075页 共166112条
-http://app1.sfda.gov.cn/datasearch/face3/base.jsp?
 tableId=25
 &tableName=TABLE25
 &title=国产药品
 &bcId=124356560303886909015737447882
 
 
+进口药品
+共278页 共4169条
+field_count = -7
+tableId=36
+tableName=TABLE36
+bcId=124356651564146415214424405468
+
+
+国产保健食品
+field_count = -6
+共1113页 共16690条
+tableId=30
+tableName=TABLE30
+bcId=118103385532690845640177699192
+
+
+进口保健食品
+field_count = -2
+共52页 共774条
+tableId=31
+tableName=TABLE31
+bcId=118103387241329685908587941736
+
+
 进口化妆品
 field_count = -6
 共12835页 共192513条
-http://app1.sfda.gov.cn/datasearch/face3/base.jsp?
 tableId=69
 &tableName=TABLE69
 &title=进口化妆品
@@ -52,11 +77,11 @@ tableId=69
 国产特殊用途化妆品
 field_count = -8
 共2444页 共36654条
-http://app1.sfda.gov.cn/datasearch/face3/search.jsp?
 tableId=68
 &bcId=138009396676753955941050804482
 &tableName=TABLE68
 &State=1
+
 
 进口器械
 field_count = -4

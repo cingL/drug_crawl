@@ -1,11 +1,10 @@
-import os
 import threading
 
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
-from crawl.util import FILE_DIR_LIST, folder, get_title, get_file_content, arrange
+from crawl.util import get_title, get_file_content, arrange
 
 
 def crawl_detail(browser, url, times=0):
@@ -75,7 +74,6 @@ class CrawlDetailThread(threading.Thread):
     def run(self):
         print('starting ' + self.name)
         output_excel(self.file, self.name)
-
 
 # if __name__ == '__main__':
 #     for directory in FILE_DIR_LIST:

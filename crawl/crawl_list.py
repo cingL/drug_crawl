@@ -1,5 +1,6 @@
 import codecs
 import threading
+import time
 
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -102,9 +103,17 @@ class CrawlThread(threading.Thread):
 
 
 if __name__ == '__main__':
+    start_time = time.time()
+    threads = []
     while util.start < util.total:
         end = util.start + util.step if util.step + util.start < util.total else util.total
         print('(' + util.start.__str__() + ' , ' + end.__str__() + ')')
         thread = CrawlThread([util.start, end])
+        threads.append(thread)
         thread.start()
         util.start += util.step
+
+    [t.join() for t in threads]
+
+    elapsed_time = time.time() - start_time
+    print('all thread end in : ' + time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))

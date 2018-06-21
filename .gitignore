@@ -1,7 +1,8 @@
-.idea/
+﻿.idea/
 .gitattributes
 *.xls
+*.xlsx
 *.txt
 *.pyc
-.old/
-.data_backup/
+data_backup/
+old/
