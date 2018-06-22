@@ -275,9 +275,10 @@ def fill_xls(directory, l, d):
     detail_content = get_file_pd(directory + folder[1] + d)
     start = (int(re.compile('-').split(d)[2]) - 1) * 15
     browser = webdriver.Chrome()
+    col_len = len(detail_content.columns)
     try:
         while detail_content.shape[0] < list_content.__len__():
-            detail_content = insert_or_append_xls(browser, detail_content, list_content, start)
+            detail_content = insert_or_append_xls(browser, detail_content, list_content, start, col_len)
 
     finally:
         print('fill_xls() end')
@@ -285,8 +286,7 @@ def fill_xls(directory, l, d):
         detail_content.to_excel(os.getcwd() + directory + folder[1] + d, index=False)
 
 
-def insert_or_append_xls(browser, detail_content, list_content, start):
-    col_len = len(detail_content.columns)
+def insert_or_append_xls(browser, detail_content, list_content, start, col_len):
     for l_line, d_line in zip_longest(list_content, range(detail_content.shape[0]), fillvalue=None):
         txt_number = str(l_line.split('.')[0])
         if d_line is None:
@@ -299,38 +299,38 @@ def insert_or_append_xls(browser, detail_content, list_content, start):
             url = l_line.split(',')[-1]
             detail = crawl_detail(browser, url)
             if detail:
+                # 组合成可分割的数组
+                drug_id = url.split('=')[-1]
+                detail.insert(1, str(drug_id).strip())
+                detail.insert(1, txt_number)
+                detail_arr = arrange(detail, url)
+                title = get_title(detail)
+                print(detail_arr)
+                print('detail:' + detail_arr.__len__().__str__())
+                print(title)
+                print('title:' + title.__len__().__str__())
                 try:
-                    # 组合成可分割的数组
-                    drug_id = url.split('=')[-1]
-                    detail.insert(1, str(drug_id).strip())
-                    detail.insert(1, txt_number)
-                    detail_arr = arrange(detail, url)
-                    title = get_title(detail)
-                    print(detail_arr)
-                    print('detail:' + detail_arr.__len__().__str__())
-                    print(title)
-                    print('title:' + title.__len__().__str__())
-                    try:
-                        if xls_number == -1:  # append
-                            detail_content = detail_content.append(pd.DataFrame(columns=title, data=[detail_arr]),
-                                                                   ignore_index=True, sort=False)
-                        else:  # insert
-                            detail_content = pd.DataFrame(
-                                data=pd.np.insert(detail_content.values, int(txt_number) - start - 1, detail_arr,
-                                                  axis=0),
-                                columns=title)
-                    except ValueError as e:
-                        # 数组跟表头对不上的（含有特殊格式文本），截取，id 替换为 url
-                        detail_arr[1] = detail_arr[detail_arr.__len__() - 1]
-                        detail_arr = detail_arr[:col_len]
+                    if xls_number == -1:  # append
+                        detail_content = detail_content.append(pd.DataFrame(columns=title, data=[detail_arr]),
+                                                               ignore_index=True, sort=False)
+                    else:  # insert
+                        detail_content = pd.DataFrame(
+                            data=pd.np.insert(detail_content.values, int(txt_number) - start - 1, detail_arr,
+                                              axis=0),
+                            columns=title)
+                except ValueError as e:
+                    # 数组跟表头对不上的（含有特殊格式文本），截取，id 替换为 url
+                    detail_arr[1] = detail_arr[detail_arr.__len__() - 1]
+                    detail_arr = detail_arr[:col_len]
+                    if xls_number == -1:
+                        detail_content = detail_content.append(pd.DataFrame(data=[detail_arr]),
+                                                               ignore_index=True, sort=False)
+                    else:
                         detail_content = pd.DataFrame(
                             data=pd.np.insert(detail_content.values, int(txt_number) - start - 1, detail_arr,
                                               axis=0))
-                        print(txt_number + ' crawl failed, with ValueError : ' + e.__str__())
-                    break
-                except Exception as e:
-                    print(txt_number + ' crawl failed, with ' + e.__str__())
-                    break
+                        break
+                    print(txt_number + ' crawl failed, with ValueError : ' + e.__str__())
     return detail_content
 
 
