@@ -12,7 +12,8 @@ from selenium.common.exceptions import WebDriverException
 from crawl import util
 from crawl.crawl_details_new import crawl_detail
 from crawl.crawl_list import get_ids
-from crawl.util import get_file_content, get_file_pd, folder, FILE_DIR_LIST, arrange, get_title, get_list_url
+from crawl.util import get_file_content, get_file_pd, folder, FILE_DIR_LIST, arrange, get_title, get_list_url, \
+    output_form
 
 
 def check(custom_directory=None):
@@ -54,21 +55,26 @@ def xls_check(directory, file_arr):
 
         data = get_file_pd(f_path)
         error = []
-        fail = []
+        failed = []
         for index in range(data.shape[0]):
             item = str(data.iat[index, 0])
-            if not item.__contains__(',None'):
-                if item.strip().split(',')[0]:
-                    number = int(item.strip().split(',')[0]) - (15 * start)
+            if item.strip().split(',')[0]:
+                try:
+                    number = int(float(item.strip().split(',')[0])) - (15 * start)
                     if number != int(index + 1):
                         error.append(item)
                         # print(index.__str__() + ' == ' + number.__str__())
-            else:
-                fail.append(item)
-                # print(item)
-        if error.__len__() or fail.__len__():
-            print(
-                'check ' + f_path + ' finish : with ' + fail.__len__().__str__() + ' failed and ' + error.__len__().__str__() + ' error index has found')
+                except:
+                    error.append(item)
+                    # print(index.__str__() + ' == ' + number.__str__())
+            item = str(data.iat[index, 0])
+            if item.strip().startswith('http'):
+                failed.append(item)
+                print(index.__str__() + ' == ' + item.__str__())
+
+        if error.__len__() or failed.__len__():
+            print('check ' + f_path + ' finish : with ' + failed.__len__().__str__()
+                  + ' failed and ' + error.__len__().__str__() + ' error index has found')
         else:
             print('check ' + f_path + ' finish : with no error')
     print('------ ' + directory + ' xls check finish -------')
@@ -279,6 +285,7 @@ def fill_xls(directory, l, d):
     try:
         while detail_content.shape[0] < list_content.__len__():
             detail_content = insert_or_append_xls(browser, detail_content, list_content, start, col_len)
+            detail_content.to_excel(os.getcwd() + directory + folder[1] + d, index=False)
 
     finally:
         print('fill_xls() end')
@@ -318,6 +325,9 @@ def insert_or_append_xls(browser, detail_content, list_content, start, col_len):
                             data=pd.np.insert(detail_content.values, int(txt_number) - start - 1, detail_arr,
                                               axis=0),
                             columns=title)
+                except AttributeError as e:
+                    # 特殊格式导致的分割失败
+                    pass
                 except ValueError as e:
                     # 数组跟表头对不上的（含有特殊格式文本），截取，id 替换为 url
                     detail_arr[1] = detail_arr[detail_arr.__len__() - 1]
@@ -433,11 +443,10 @@ def compare_url():
                 l_url = str(l_line).split(',')[-1].strip()
                 l_id = int(l_url.split('=')[-1])
                 # print(l_line, d_line)
-                d_id = int(detail_content.iat[d_line, 1])
-                # try:
-                #     d_id = int(d_id)
-                # except:
-                #     d_id = d_id.split(',')[-1].strip().split('=')[-1]
+                try:
+                    d_id = int(detail_content.iat[d_line, 1])
+                except ValueError:
+                    error.append(d_id)
                 if l_id != d_id:
                     error.append(l_line.split('.')[0])
                     print('row ' + l_line.split('.')[0].__str__() + ' : ' + l_id.__str__() + ' == ' + d_id.__str__())
@@ -470,7 +479,7 @@ if __name__ == '__main__':
 
     """填补缺失数据"""
     # fill_all_txt(FILE_DIR_LIST[0])
-    fill_all_xls(FILE_DIR_LIST[0])
+    # fill_all_xls(FILE_DIR_LIST[0])
 
     """以url比对"""
     # compare_url()
@@ -478,4 +487,4 @@ if __name__ == '__main__':
     # txt_vs_xls()
 
     """合并文件"""
-    # output_form(FILE_DIR_LIST[0])
+    output_form(FILE_DIR_LIST[0])
