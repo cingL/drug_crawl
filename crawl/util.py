@@ -171,7 +171,7 @@ def get_title(arr):
     :return:
     """
     # print(arr.__len__().__str__())
-    arr.pop(0)
+    # arr.pop(0)
     arr.insert(0, 'No.')
     result = []
     for i in arr[0:field_count - 1:2]:
